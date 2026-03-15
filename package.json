@@ -1,10 +1,14 @@
 {
   "name": "code-commentary",
+  "displayName": "Code Commentary",
   "version": "0.1.1",
   "description": "Live audio commentary for your AI coding sessions — sports, podcast, nature doc, or hype style",
+  "publisher": "dev-gboy",
   "bin": {
     "code-commentary": "./bin/code-commentary.js"
   },
+  "extensionKind": ["workspace", "ui"],
+  "main": "./src/extension.js",
   "files": [
     "bin/",
     "src/",
@@ -27,14 +31,145 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YashJain14/code-commentary.git"
+    "url": "git+https://github.com/dev-gboy/code-commentary.git"
   },
   "bugs": {
-    "url": "https://github.com/YashJain14/code-commentary/issues"
+    "url": "https://github.com/dev-gboy/code-commentary/issues"
   },
-  "homepage": "https://github.com/YashJain14/code-commentary#readme",
+  "homepage": "https://github.com/dev-gboy/code-commentary#readme",
   "engines": {
-    "node": ">=18"
+    "node": ">=18",
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "code-commentary",
+          "title": "Code Commentary",
+          "icon": "$(megaphone)"
+        }
+      ]
+    },
+    "views": {
+      "code-commentary": [
+        {
+          "id": "code-commentary.settings",
+          "name": "Settings"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "code-commentary.start",
+        "title": "Code Commentary: Start",
+        "icon": "$(play)"
+      },
+      {
+        "command": "code-commentary.stop",
+        "title": "Code Commentary: Stop",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "code-commentary.toggle",
+        "title": "Code Commentary: Toggle"
+      },
+      {
+        "command": "code-commentary.changeSetting",
+        "title": "Change Setting",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "code-commentary.showOutput",
+        "title": "Show Output",
+        "icon": "$(output)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "code-commentary.start",
+          "when": "view == code-commentary.settings && !code-commentary.running",
+          "group": "navigation"
+        },
+        {
+          "command": "code-commentary.stop",
+          "when": "view == code-commentary.settings && code-commentary.running",
+          "group": "navigation"
+        },
+        {
+          "command": "code-commentary.showOutput",
+          "when": "view == code-commentary.settings",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "code-commentary.changeSetting",
+          "when": "view == code-commentary.settings && viewItem == editable",
+          "group": "inline"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Code Commentary",
+      "properties": {
+        "code-commentary.style": {
+          "type": "string",
+          "default": "sports",
+          "enum": ["sports", "podcast", "nature", "hype"],
+          "enumDescriptions": [
+            "Excited sports commentator play-by-play",
+            "Chill, thoughtful podcast host",
+            "David Attenborough nature documentary",
+            "Maximum energy hype-person"
+          ],
+          "description": "Commentary style"
+        },
+        "code-commentary.voice": {
+          "type": "string",
+          "default": "Puck",
+          "enum": ["Puck", "Kore", "Charon", "Aoede", "Fenrir", "Leda"],
+          "description": "Gemini TTS voice"
+        },
+        "code-commentary.interval": {
+          "type": "number",
+          "default": 4,
+          "minimum": 1,
+          "description": "Minimum seconds between commentary batches"
+        },
+        "code-commentary.sessionTtl": {
+          "type": "number",
+          "default": 30,
+          "minimum": 0,
+          "description": "Reconnect after N minutes to reset context (0 to disable)"
+        },
+        "code-commentary.silent": {
+          "type": "boolean",
+          "default": false,
+          "description": "Text-only mode (no audio playback)"
+        },
+        "code-commentary.verbose": {
+          "type": "boolean",
+          "default": false,
+          "description": "Print raw events and debug info"
+        },
+        "code-commentary.language": {
+          "type": "string",
+          "default": "",
+          "description": "Commentary language (e.g. Spanish, Japanese, Hindi). Leave empty for English."
+        },
+        "code-commentary.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Google AI (Gemini) API key. Can also be set via GEMINI_API_KEY environment variable."
+        }
+      }
+    }
   },
   "dependencies": {
     "ws": "^8.19.0"

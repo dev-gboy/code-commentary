@@ -2,3 +2,17 @@ node_modules/
 plan.md
 update.md
 
+# VS Code extension output
+*.vsix
+
+# Environment / secrets
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+

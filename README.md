@@ -1,10 +1,25 @@
 # code-commentary
 
+> Fork of [YashJain14/code-commentary](https://github.com/YashJain14/code-commentary) with VS Code extension support.
+
 Live sports/podcast-style audio commentary for your AI coding sessions.
 
 It hooks into [Claude Code's](https://docs.anthropic.com/en/docs/claude-code) lifecycle events and narrates what's happening — test failures, file creations, deployments, errors — like a commentator watching a game.
 
-**Two commands to set up. Then just use `claude` normally.**
+Works as both a **CLI tool** and a **VS Code extension**.
+
+### VS Code Extension
+
+Install from the marketplace or run locally, then:
+
+1. Open the command palette (`Ctrl+Shift+P`) and run `Code Commentary: Start`
+2. Or click the `Commentary: OFF` status bar item to toggle
+
+Configure style, voice, language, and API key in VS Code Settings under **Code Commentary**.
+
+> Hooks still need to be installed via the CLI: `npx code-commentary init`
+
+### CLI
 
 ```bash
 npx code-commentary init     # Installs hooks into Claude Code settings
