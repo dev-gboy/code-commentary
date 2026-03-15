@@ -1,6 +1,6 @@
 {
-  "name": "code-commentary",
-  "displayName": "Code Commentary",
+  "name": "code-commentary-vscode",
+  "displayName": "Code Commentary (VS Code)",
   "version": "0.1.1",
   "description": "Live audio commentary for your AI coding sessions — sports, podcast, nature doc, or hype style",
   "publisher": "dev-gboy",
@@ -9,12 +9,6 @@
   },
   "extensionKind": ["workspace", "ui"],
   "main": "./src/extension.js",
-  "files": [
-    "bin/",
-    "src/",
-    "README.md",
-    "LICENSE"
-  ],
   "keywords": [
     "claude",
     "claude-code",

@@ -1,4 +1,10 @@
 .git/**
 node_modules/**
 .gitignore
+.npmignore
 package-lock.json
+.claude/**
+docs/**
+plan.md
+update.md
+*.vsix
