@@ -3,6 +3,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const { installHooks, uninstallHooks, hooksInstalled } = require('./init');
+const pkg = require('../package.json');
 
 let daemonProcess = null;
 let outputChannel = null;
@@ -131,6 +132,9 @@ class SidebarProvider {
   <span class="value">${hooks ? 'installed' : 'not installed'}</span>
 </div>
 
+<div class="separator"></div>
+<div id="audio-debug" style="font-size: 0.8em; color: var(--vscode-descriptionForeground); padding: 4px 0;">Audio: waiting...</div>
+
 <script>
 const vscode = acquireVsCodeApi();
 
@@ -148,8 +152,16 @@ function ensureContext() {
     audioCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
     nextStartTime = audioCtx.currentTime;
   }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
   return audioCtx;
 }
+
+// Pre-init AudioContext on any user gesture to satisfy autoplay policy
+document.addEventListener('click', () => {
+  ensureContext();
+}, { once: false });
 
 function playPcmChunk(base64Data) {
   const ctx = ensureContext();
@@ -176,10 +188,19 @@ function playPcmChunk(base64Data) {
   nextStartTime += buffer.duration;
 }
 
+let audioChunkCount = 0;
+const dbg = document.getElementById('audio-debug');
+
 window.addEventListener('message', (event) => {
   const msg = event.data;
   if (msg.type === 'audio') {
-    playPcmChunk(msg.data);
+    audioChunkCount++;
+    try {
+      playPcmChunk(msg.data);
+      if (dbg) dbg.textContent = 'Audio chunks: ' + audioChunkCount + ' | ctx state: ' + (audioCtx ? audioCtx.state : 'none');
+    } catch (e) {
+      if (dbg) dbg.textContent = 'Audio ERROR: ' + e.message;
+    }
   } else if (msg.type === 'end_utterance') {
     nextStartTime = 0;
   }
@@ -403,7 +424,8 @@ async function startDaemon() {
 
   outputChannel.clear();
   outputChannel.show(true);
-  outputChannel.appendLine(`Starting code-commentary: ${config.style} style, ${config.voice} voice`);
+  outputChannel.appendLine(`code-commentary v${pkg.version}`);
+  outputChannel.appendLine(`Starting: ${config.style} style, ${config.voice} voice`);
 
   daemonProcess = spawn(process.execPath, [cliPath, ...args], {
     env: {
