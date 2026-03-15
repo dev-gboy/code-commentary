@@ -1,7 +1,7 @@
 {
   "name": "code-commentary-vscode",
   "displayName": "Code Commentary (VS Code)",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Live audio commentary for your AI coding sessions — sports, podcast, nature doc, or hype style",
   "publisher": "dev-gboy",
   "bin": {

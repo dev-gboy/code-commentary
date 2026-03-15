@@ -133,7 +133,7 @@ class SidebarProvider {
 </div>
 
 <div class="separator"></div>
-<div id="audio-debug" style="font-size: 0.8em; color: var(--vscode-descriptionForeground); padding: 4px 0;">Audio: waiting...</div>
+<div id="audio-debug" style="font-size: 0.8em; color: var(--vscode-descriptionForeground); padding: 4px 0; display: ${cfg.verbose ? 'block' : 'none'};">Audio: waiting...</div>
 
 <script>
 const vscode = acquireVsCodeApi();
@@ -190,6 +190,13 @@ function playPcmChunk(base64Data) {
 
 let audioChunkCount = 0;
 const dbg = document.getElementById('audio-debug');
+
+// Periodically resume AudioContext if it gets suspended
+setInterval(() => {
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+}, 1000);
 
 window.addEventListener('message', (event) => {
   const msg = event.data;
