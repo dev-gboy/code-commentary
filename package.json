@@ -1,6 +1,6 @@
 {
   "name": "code-commentary",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Live audio commentary for your AI coding sessions — sports, podcast, nature doc, or hype style",
   "bin": {
     "code-commentary": "./bin/code-commentary.js"
@@ -24,11 +24,15 @@
     "developer-tools"
   ],
   "author": "Yash",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yash/code-commentary.git"
+    "url": "git+https://github.com/YashJain14/code-commentary.git"
   },
+  "bugs": {
+    "url": "https://github.com/YashJain14/code-commentary/issues"
+  },
+  "homepage": "https://github.com/YashJain14/code-commentary#readme",
   "engines": {
     "node": ">=18"
   },
