@@ -27,7 +27,10 @@ function handleHookEvent(hookEventName) {
         error: event.error || null,
         message: event.notification || event.message || null,
         session_id: sessionId,
-        cwd: event.cwd
+        cwd: event.cwd,
+        exit_code: event.tool_response?.exit_code ?? null,
+        last_assistant_message: truncate(event.last_assistant_message, 500),
+        user_prompt: truncate(event.user_prompt, 300),
       }) + '\n';
 
       fs.appendFileSync(path.join(EVENTS_DIR, `${sessionId}.jsonl`), line);
@@ -38,6 +41,11 @@ function handleHookEvent(hookEventName) {
 
     process.exit(0);
   });
+}
+
+function truncate(str, max) {
+  if (!str || typeof str !== 'string') return null;
+  return str.length > max ? str.slice(0, max) + '...' : str;
 }
 
 function summarizeInput(event) {

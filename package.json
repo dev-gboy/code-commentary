@@ -1,7 +1,7 @@
 {
   "name": "code-commentary-vscode",
   "displayName": "Code Commentary (VS Code)",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Live audio commentary for your AI coding sessions — sports, podcast, nature doc, or hype style",
   "publisher": "dev-gboy",
   "bin": {
@@ -118,12 +118,14 @@
         "code-commentary.style": {
           "type": "string",
           "default": "sports",
-          "enum": ["sports", "podcast", "nature", "hype"],
+          "enum": ["sports", "podcast", "nature", "hype", "narrator", "coding-buddy"],
           "enumDescriptions": [
             "Excited sports commentator play-by-play",
             "Chill, thoughtful podcast host",
             "David Attenborough nature documentary",
-            "Maximum energy hype-person"
+            "Maximum energy hype-person",
+            "Clear, informational narration of what's happening",
+            "Smart colleague giving status updates only when it matters"
           ],
           "description": "Commentary style"
         },

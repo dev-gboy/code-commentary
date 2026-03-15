@@ -11,6 +11,7 @@ const HOOK_EVENTS = {
   Notification: {},
   SessionStart: {},
   SessionEnd: {},
+  UserPromptSubmit: {},
 };
 
 function getBinPath() {

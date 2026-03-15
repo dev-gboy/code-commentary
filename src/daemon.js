@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { EVENTS_DIR } = require('./config');
-const { deduplicateEvents } = require('./filter');
+const { deduplicateEvents, filterForCodingBuddy } = require('./filter');
 const { LiveSession } = require('./live-session');
 const { StreamingPlayer } = require('./audio-player');
 const { getPrompt } = require('./prompts');
@@ -10,7 +10,7 @@ function formatEvents(events) {
   return events.map(e => {
     if (e.event === 'PostToolUse' && e.tool === 'Bash') {
       const cmd = e.input?.command || 'unknown command';
-      const exitCode = e.response?.exit_code;
+      const exitCode = e.exit_code ?? e.response?.exit_code;
       const status = exitCode === 0 ? 'succeeded' : (exitCode !== undefined ? 'FAILED' : 'ran');
       return `[COMMAND] ${cmd} → ${status}`;
     }
@@ -29,7 +29,13 @@ function formatEvents(events) {
     if (e.event === 'PostToolUseFailure') {
       return `[ERROR] ${e.tool || 'unknown'}: ${e.error || 'unknown error'}`;
     }
-    if (e.event === 'Stop') return '[TASK COMPLETE]';
+    if (e.event === 'Stop') {
+      const summary = e.last_assistant_message
+        ? e.last_assistant_message.slice(0, 300)
+        : '';
+      return `[TASK COMPLETE]${summary ? ' ' + summary : ''}`;
+    }
+    if (e.event === 'UserPromptSubmit') return `[USER PROMPT] ${e.user_prompt || ''}`;
     if (e.event === 'Notification') return `[NEEDS INPUT] ${e.message || ''}`;
     if (e.event === 'SessionStart') return '[SESSION STARTED]';
     if (e.event === 'SessionEnd') return '[SESSION ENDED]';
@@ -152,7 +158,9 @@ async function startDaemon(config) {
     isProcessing = true;
 
     const events = eventBuffer.splice(0);
-    const interesting = deduplicateEvents(events);
+    const interesting = config.style === 'coding-buddy'
+      ? filterForCodingBuddy(events)
+      : deduplicateEvents(events);
 
     if (interesting.length === 0) {
       isProcessing = false;
@@ -209,12 +217,21 @@ async function startDaemon(config) {
       };
     });
 
+    // SKIP detection for coding-buddy: Gemini responds with "." when nothing is noteworthy
+    const text = textBuffer.trim();
+    if (text === '.' || text === '') {
+      if (config.verbose) log('\x1b[90m[DAEMON] Skipped (not noteworthy)\x1b[0m');
+      isProcessing = false;
+      if (eventBuffer.length > 0) scheduleProcessing();
+      return;
+    }
+
     // Print text (in silent mode this is the commentary, in audio mode it may be empty)
-    if (textBuffer.trim()) {
+    if (text) {
       if (config.jsonOutput) {
-        jsonOut({ type: 'text', data: textBuffer.trim() });
+        jsonOut({ type: 'text', data: text });
       } else {
-        console.log(`\x1b[33m🎙️  ${textBuffer.trim()}\x1b[0m`);
+        console.log(`\x1b[33m🎙️  ${text}\x1b[0m`);
       }
     }
 
@@ -227,7 +244,8 @@ async function startDaemon(config) {
 
   function scheduleProcessing() {
     if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => processEvents(), 800);
+    const debounceMs = config.style === 'coding-buddy' ? 2500 : 800;
+    debounceTimer = setTimeout(() => processEvents(), debounceMs);
   }
 
   // Poll for new events

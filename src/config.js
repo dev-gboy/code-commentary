@@ -14,7 +14,7 @@ const DEFAULTS = {
   language: null,
 };
 
-const VALID_STYLES = ['sports', 'podcast', 'nature', 'hype'];
+const VALID_STYLES = ['sports', 'podcast', 'nature', 'hype', 'narrator', 'coding-buddy'];
 const VALID_VOICES = ['Kore', 'Puck', 'Charon', 'Aoede', 'Fenrir', 'Leda'];
 
 function parseArgs(args) {

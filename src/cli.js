@@ -78,7 +78,7 @@ Usage:
   code-commentary uninstall           Remove hooks from Claude Code
 
 Start options:
-  --style <name>       Commentary style: sports | podcast | nature | hype  [default: sports]
+  --style <name>       Commentary style: sports | podcast | nature | hype | narrator | coding-buddy  [default: sports]
   --voice <name>       TTS voice: Puck | Kore | Charon | Aoede | Fenrir   [default: Puck]
   --interval <sec>     Min seconds between commentary batches              [default: 4]
   --session-ttl <min>  Reconnect after N minutes (reset context)           [default: 30]

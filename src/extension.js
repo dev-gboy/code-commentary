@@ -195,12 +195,14 @@ window.addEventListener('message', (event) => {
 
 const SETTING_HANDLERS = {
   async style() {
-    const styles = ['sports', 'podcast', 'nature', 'hype'];
+    const styles = ['sports', 'podcast', 'nature', 'hype', 'narrator', 'coding-buddy'];
     const descriptions = {
       sports: 'Excited sports commentator play-by-play',
       podcast: 'Chill, thoughtful podcast host',
       nature: 'David Attenborough nature documentary',
       hype: 'Maximum energy hype-person',
+      narrator: 'Clear, informational narration',
+      'coding-buddy': 'Smart colleague giving status updates',
     };
     const picked = await vscode.window.showQuickPick(
       styles.map(s => ({ label: s, description: descriptions[s] })),
