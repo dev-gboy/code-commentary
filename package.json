@@ -1,0 +1,38 @@
+{
+  "name": "code-commentary",
+  "version": "0.1.0",
+  "description": "Live audio commentary for your AI coding sessions — sports, podcast, nature doc, or hype style",
+  "bin": {
+    "code-commentary": "./bin/code-commentary.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "claude",
+    "claude-code",
+    "ai",
+    "coding",
+    "commentary",
+    "tts",
+    "audio",
+    "gemini",
+    "hooks",
+    "developer-tools"
+  ],
+  "author": "Yash",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yash/code-commentary.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.19.0"
+  }
+}
