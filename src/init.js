@@ -15,9 +15,9 @@ const HOOK_EVENTS = {
 };
 
 function getBinPath() {
-  const localBin = path.resolve(__dirname, '..', 'bin', 'code-commentary.js');
+  const localBin = path.resolve(__dirname, '..', 'bin', 'code-buddy.js');
   if (fs.existsSync(localBin)) return `node ${localBin}`;
-  return 'code-commentary';
+  return 'code-buddy';
 }
 
 function buildHooks() {
@@ -60,9 +60,9 @@ function installHooks() {
       settings.hooks[eventName] = [];
     }
 
-    // Remove any existing code-commentary hooks (may have stale paths)
+    // Remove any existing code-buddy hooks (may have stale paths)
     settings.hooks[eventName] = settings.hooks[eventName].filter(rule =>
-      !rule.hooks?.some(h => h.command?.includes('code-commentary'))
+      !rule.hooks?.some(h => h.command?.includes('code-buddy'))
     );
 
     // Add fresh hooks
@@ -101,7 +101,7 @@ function uninstallHooks() {
   for (const eventName of Object.keys(settings.hooks)) {
     const before = settings.hooks[eventName].length;
     settings.hooks[eventName] = settings.hooks[eventName].filter(rule =>
-      !rule.hooks?.some(h => h.command?.includes('code-commentary'))
+      !rule.hooks?.some(h => h.command?.includes('code-buddy'))
     );
     if (settings.hooks[eventName].length < before) removed = true;
     if (settings.hooks[eventName].length === 0) {
@@ -122,9 +122,9 @@ function uninstallHooks() {
   }
 
   if (removed) {
-    return { success: true, message: 'code-commentary hooks removed from ~/.claude/settings.json' };
+    return { success: true, message: 'code-buddy hooks removed from ~/.claude/settings.json' };
   } else {
-    return { success: true, message: 'No code-commentary hooks found to remove.' };
+    return { success: true, message: 'No code-buddy hooks found to remove.' };
   }
 }
 
@@ -134,7 +134,7 @@ function hooksInstalled() {
     const settings = JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8'));
     if (!settings.hooks) return false;
     return Object.values(settings.hooks).some(rules =>
-      rules.some(rule => rule.hooks?.some(h => h.command?.includes('code-commentary')))
+      rules.some(rule => rule.hooks?.some(h => h.command?.includes('code-buddy')))
     );
   } catch {
     return false;

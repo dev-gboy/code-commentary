@@ -79,6 +79,7 @@ class SidebarProvider {
 <div class="status">
   <span class="icon">${running ? '\u2705' : '\u26d4'}</span>
   Status: ${running ? 'Running' : 'Stopped'}
+  <span style="float:right; color: var(--vscode-descriptionForeground); font-size: 0.85em; font-weight: normal;">v${pkg.version}</span>
 </div>
 
 <div class="actions">
@@ -304,7 +305,7 @@ const SETTING_HANDLERS = {
 };
 
 async function updateSetting(key, value) {
-  const cfg = vscode.workspace.getConfiguration('code-commentary');
+  const cfg = vscode.workspace.getConfiguration('code-buddy');
   await cfg.update(key, value, vscode.ConfigurationTarget.Global);
   if (sidebarProvider) sidebarProvider.refresh();
 }
@@ -326,7 +327,7 @@ async function doInstallHooks() {
 
 async function doUninstallHooks() {
   const confirm = await vscode.window.showWarningMessage(
-    'Remove Code Commentary hooks from ~/.claude/settings.json?',
+    'Remove Code Buddy hooks from ~/.claude/settings.json?',
     { modal: true },
     'Uninstall'
   );
@@ -343,11 +344,11 @@ async function doUninstallHooks() {
 // --- Core functions ---
 
 function activate(context) {
-  outputChannel = vscode.window.createOutputChannel('Code Commentary');
+  outputChannel = vscode.window.createOutputChannel('Code Buddy');
 
   // Status bar
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-  statusBarItem.command = 'code-commentary.toggle';
+  statusBarItem.command = 'code-buddy.toggle';
   setStatus('stopped');
   statusBarItem.show();
   context.subscriptions.push(statusBarItem);
@@ -355,7 +356,7 @@ function activate(context) {
   // Sidebar webview (settings + audio)
   sidebarProvider = new SidebarProvider(context.extensionUri);
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider('code-commentary.settings', sidebarProvider, {
+    vscode.window.registerWebviewViewProvider('code-buddy.settings', sidebarProvider, {
       webviewOptions: { retainContextWhenHidden: true }
     })
   );
@@ -363,7 +364,7 @@ function activate(context) {
   // Watch for config changes to refresh sidebar
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(e => {
-      if (e.affectsConfiguration('code-commentary')) {
+      if (e.affectsConfiguration('code-buddy')) {
         if (sidebarProvider) sidebarProvider.refresh();
       }
     })
@@ -371,18 +372,18 @@ function activate(context) {
 
   // Commands
   context.subscriptions.push(
-    vscode.commands.registerCommand('code-commentary.start', startDaemon),
-    vscode.commands.registerCommand('code-commentary.stop', stopDaemon),
-    vscode.commands.registerCommand('code-commentary.toggle', toggleDaemon),
-    vscode.commands.registerCommand('code-commentary.changeSetting', changeSetting),
-    vscode.commands.registerCommand('code-commentary.showOutput', () => outputChannel.show(true)),
-    vscode.commands.registerCommand('code-commentary.installHooks', doInstallHooks),
-    vscode.commands.registerCommand('code-commentary.uninstallHooks', doUninstallHooks),
+    vscode.commands.registerCommand('code-buddy.start', startDaemon),
+    vscode.commands.registerCommand('code-buddy.stop', stopDaemon),
+    vscode.commands.registerCommand('code-buddy.toggle', toggleDaemon),
+    vscode.commands.registerCommand('code-buddy.changeSetting', changeSetting),
+    vscode.commands.registerCommand('code-buddy.showOutput', () => outputChannel.show(true)),
+    vscode.commands.registerCommand('code-buddy.installHooks', doInstallHooks),
+    vscode.commands.registerCommand('code-buddy.uninstallHooks', doUninstallHooks),
   );
 }
 
 function getConfig() {
-  const cfg = vscode.workspace.getConfiguration('code-commentary');
+  const cfg = vscode.workspace.getConfiguration('code-buddy');
   return {
     style: cfg.get('style', 'sports'),
     voice: cfg.get('voice', 'Puck'),
@@ -410,7 +411,7 @@ function buildArgs(config) {
 
 async function startDaemon() {
   if (daemonProcess) {
-    vscode.window.showWarningMessage('Code Commentary is already running.');
+    vscode.window.showWarningMessage('Code Buddy is already running.');
     return;
   }
 
@@ -426,12 +427,12 @@ async function startDaemon() {
     config.apiKey = key;
   }
 
-  const cliPath = path.join(__dirname, '..', 'bin', 'code-commentary.js');
+  const cliPath = path.join(__dirname, '..', 'bin', 'code-buddy.js');
   const args = buildArgs(config);
 
   outputChannel.clear();
   outputChannel.show(true);
-  outputChannel.appendLine(`code-commentary v${pkg.version}`);
+  outputChannel.appendLine(`code-buddy v${pkg.version}`);
   outputChannel.appendLine(`Starting: ${config.style} style, ${config.voice} voice`);
 
   daemonProcess = spawn(process.execPath, [cliPath, ...args], {
@@ -488,12 +489,12 @@ async function startDaemon() {
 
 function stopDaemon() {
   if (!daemonProcess) {
-    vscode.window.showInformationMessage('Code Commentary is not running.');
+    vscode.window.showInformationMessage('Code Buddy is not running.');
     return;
   }
 
   daemonProcess.kill('SIGTERM');
-  outputChannel.appendLine('Stopping code-commentary...');
+  outputChannel.appendLine('Stopping code-buddy...');
 }
 
 function toggleDaemon() {
@@ -511,15 +512,15 @@ function cleanup() {
 
 function setStatus(state) {
   const running = state === 'running';
-  vscode.commands.executeCommand('setContext', 'code-commentary.running', running);
+  vscode.commands.executeCommand('setContext', 'code-buddy.running', running);
 
   if (statusBarItem) {
     if (running) {
       statusBarItem.text = '$(megaphone) Commentary: ON';
-      statusBarItem.tooltip = 'Code Commentary is running. Click to stop.';
+      statusBarItem.tooltip = 'Code Buddy is running. Click to stop.';
     } else {
       statusBarItem.text = '$(megaphone) Commentary: OFF';
-      statusBarItem.tooltip = 'Code Commentary is stopped. Click to start.';
+      statusBarItem.tooltip = 'Code Buddy is stopped. Click to start.';
     }
   }
 

@@ -98,7 +98,7 @@ async function startDaemon(config) {
     console.error(`Failed to connect: ${err.message}`);
     process.exit(1);
   }
-  log('\x1b[35m🎙️  code-commentary is live. Waiting for Claude Code events...\x1b[0m\n');
+  log('\x1b[35m🎙️  code-buddy is live. Waiting for Claude Code events...\x1b[0m\n');
   log(`   Style: ${config.style} | Voice: ${config.voice}`);
   if (config.silent) log('   Mode: text-only (no audio)');
   log('   Press Ctrl+C to stop.\n');
@@ -108,7 +108,7 @@ async function startDaemon(config) {
   const shutdown = () => {
     if (shuttingDown) return;
     shuttingDown = true;
-    console.log('\n\x1b[35m🎙️  That\'s a wrap! code-commentary signing off.\x1b[0m');
+    console.log('\n\x1b[35m🎙️  That\'s a wrap! code-buddy signing off.\x1b[0m');
     if (player) player.kill();
     session.disconnect();
     process.exit(0);

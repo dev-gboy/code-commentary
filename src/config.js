@@ -72,7 +72,7 @@ function parseArgs(args) {
   return config;
 }
 
-const EVENTS_DIR = path.join(os.tmpdir(), 'code-commentary');
-const PID_FILE = path.join(os.tmpdir(), 'code-commentary.pid');
+const EVENTS_DIR = path.join(os.tmpdir(), 'code-buddy');
+const PID_FILE = path.join(os.tmpdir(), 'code-buddy.pid');
 
 module.exports = { parseArgs, DEFAULTS, VALID_STYLES, VALID_VOICES, EVENTS_DIR, PID_FILE };

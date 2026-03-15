@@ -35,8 +35,8 @@ if (hookIdx !== -1) {
         });
         child.unref();
         fs.writeFileSync(PID_FILE, String(child.pid));
-        console.log(`code-commentary daemon started (PID: ${child.pid})`);
-        console.log(`Stop with: code-commentary stop`);
+        console.log(`code-buddy daemon started (PID: ${child.pid})`);
+        console.log(`Stop with: code-buddy stop`);
         process.exit(0);
       }
 
@@ -52,7 +52,7 @@ if (hookIdx !== -1) {
       const pid = parseInt(fs.readFileSync(PID_FILE, 'utf8').trim(), 10);
       try {
         process.kill(pid, 'SIGTERM');
-        console.log(`Stopped code-commentary daemon (PID: ${pid})`);
+        console.log(`Stopped code-buddy daemon (PID: ${pid})`);
       } catch (err) {
         if (err.code === 'ESRCH') {
           console.log('Daemon was not running.');
@@ -69,13 +69,13 @@ if (hookIdx !== -1) {
       break;
 
     default:
-      console.log(`code-commentary - Live audio commentary for AI coding sessions
+      console.log(`code-buddy - Live audio commentary for AI coding sessions
 
 Usage:
-  code-commentary init                Install hooks into Claude Code
-  code-commentary start [options]     Start the commentary daemon
-  code-commentary stop                Stop the background daemon
-  code-commentary uninstall           Remove hooks from Claude Code
+  code-buddy init                Install hooks into Claude Code
+  code-buddy start [options]     Start the commentary daemon
+  code-buddy stop                Stop the background daemon
+  code-buddy uninstall           Remove hooks from Claude Code
 
 Start options:
   --style <name>       Commentary style: sports | podcast | nature | hype | narrator | coding-buddy  [default: sports]

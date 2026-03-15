@@ -1,13 +1,14 @@
 {
-  "name": "code-commentary-vscode",
-  "displayName": "Code Commentary (VS Code)",
-  "version": "0.2.1",
+  "name": "code-buddy-vscode",
+  "displayName": "Code Buddy",
+  "version": "0.3.0",
+  "icon": "icon.png",
   "description": "Live audio commentary for your AI coding sessions — sports, podcast, nature doc, or hype style",
   "publisher": "dev-gboy",
   "bin": {
-    "code-commentary": "./bin/code-commentary.js"
+    "code-buddy": "./bin/code-buddy.js"
   },
-  "extensionKind": ["workspace", "ui"],
+  "extensionKind": ["workspace"],
   "main": "./src/extension.js",
   "keywords": [
     "claude",
@@ -25,12 +26,12 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dev-gboy/code-commentary.git"
+    "url": "git+https://github.com/dev-gboy/code-buddy.git"
   },
   "bugs": {
-    "url": "https://github.com/dev-gboy/code-commentary/issues"
+    "url": "https://github.com/dev-gboy/code-buddy/issues"
   },
-  "homepage": "https://github.com/dev-gboy/code-commentary#readme",
+  "homepage": "https://github.com/dev-gboy/code-buddy#readme",
   "engines": {
     "node": ">=18",
     "vscode": "^1.85.0"
@@ -43,16 +44,16 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "code-commentary",
+          "id": "code-buddy",
           "title": "Code Commentary",
           "icon": "$(megaphone)"
         }
       ]
     },
     "views": {
-      "code-commentary": [
+      "code-buddy": [
         {
-          "id": "code-commentary.settings",
+          "id": "code-buddy.settings",
           "name": "Settings",
           "type": "webview"
         }
@@ -60,53 +61,53 @@
     },
     "commands": [
       {
-        "command": "code-commentary.start",
+        "command": "code-buddy.start",
         "title": "Code Commentary: Start",
         "icon": "$(play)"
       },
       {
-        "command": "code-commentary.stop",
+        "command": "code-buddy.stop",
         "title": "Code Commentary: Stop",
         "icon": "$(debug-stop)"
       },
       {
-        "command": "code-commentary.toggle",
+        "command": "code-buddy.toggle",
         "title": "Code Commentary: Toggle"
       },
       {
-        "command": "code-commentary.changeSetting",
+        "command": "code-buddy.changeSetting",
         "title": "Change Setting",
         "icon": "$(edit)"
       },
       {
-        "command": "code-commentary.showOutput",
+        "command": "code-buddy.showOutput",
         "title": "Show Output",
         "icon": "$(output)"
       },
       {
-        "command": "code-commentary.installHooks",
+        "command": "code-buddy.installHooks",
         "title": "Code Commentary: Install Hooks"
       },
       {
-        "command": "code-commentary.uninstallHooks",
+        "command": "code-buddy.uninstallHooks",
         "title": "Code Commentary: Uninstall Hooks"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "code-commentary.start",
-          "when": "view == code-commentary.settings && !code-commentary.running",
+          "command": "code-buddy.start",
+          "when": "view == code-buddy.settings && !code-buddy.running",
           "group": "navigation"
         },
         {
-          "command": "code-commentary.stop",
-          "when": "view == code-commentary.settings && code-commentary.running",
+          "command": "code-buddy.stop",
+          "when": "view == code-buddy.settings && code-buddy.running",
           "group": "navigation"
         },
         {
-          "command": "code-commentary.showOutput",
-          "when": "view == code-commentary.settings",
+          "command": "code-buddy.showOutput",
+          "when": "view == code-buddy.settings",
           "group": "navigation"
         }
       ],
@@ -115,7 +116,7 @@
     "configuration": {
       "title": "Code Commentary",
       "properties": {
-        "code-commentary.style": {
+        "code-buddy.style": {
           "type": "string",
           "default": "sports",
           "enum": ["sports", "podcast", "nature", "hype", "narrator", "coding-buddy"],
@@ -129,40 +130,40 @@
           ],
           "description": "Commentary style"
         },
-        "code-commentary.voice": {
+        "code-buddy.voice": {
           "type": "string",
           "default": "Puck",
           "enum": ["Puck", "Kore", "Charon", "Aoede", "Fenrir", "Leda"],
           "description": "Gemini TTS voice"
         },
-        "code-commentary.interval": {
+        "code-buddy.interval": {
           "type": "number",
           "default": 4,
           "minimum": 1,
           "description": "Minimum seconds between commentary batches"
         },
-        "code-commentary.sessionTtl": {
+        "code-buddy.sessionTtl": {
           "type": "number",
           "default": 30,
           "minimum": 0,
           "description": "Reconnect after N minutes to reset context (0 to disable)"
         },
-        "code-commentary.silent": {
+        "code-buddy.silent": {
           "type": "boolean",
           "default": false,
           "description": "Text-only mode (no audio playback)"
         },
-        "code-commentary.verbose": {
+        "code-buddy.verbose": {
           "type": "boolean",
           "default": false,
           "description": "Print raw events and debug info"
         },
-        "code-commentary.language": {
+        "code-buddy.language": {
           "type": "string",
           "default": "",
           "description": "Commentary language (e.g. Spanish, Japanese, Hindi). Leave empty for English."
         },
-        "code-commentary.apiKey": {
+        "code-buddy.apiKey": {
           "type": "string",
           "default": "",
           "description": "Google AI (Gemini) API key. Can also be set via GEMINI_API_KEY environment variable."
