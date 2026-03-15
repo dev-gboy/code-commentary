@@ -45,7 +45,8 @@ async function startDaemon(config) {
 
   fs.mkdirSync(EVENTS_DIR, { recursive: true });
 
-  const player = config.silent ? null : new StreamingPlayer();
+  const usePlayer = !config.silent && !config.jsonOutput;
+  const player = usePlayer ? new StreamingPlayer() : null;
   const session = new LiveSession({
     apiKey: config.apiKey,
     voice: config.voice,
@@ -54,15 +55,23 @@ async function startDaemon(config) {
     verbose: config.verbose,
   });
 
-  // Wire audio chunks from Live API → streaming player
+  function jsonOut(obj) {
+    process.stdout.write(JSON.stringify(obj) + '\n');
+  }
+
+  // Wire audio chunks from Live API → player or JSON output
   let chunkCount = 0;
-  if (player) {
+  if (!config.silent) {
     session.onAudioChunk = (base64Data) => {
       chunkCount++;
       if (chunkCount === 1 && config.verbose) {
-        console.log('\x1b[90m[AUDIO] First chunk received, streaming to player...\x1b[0m');
+        console.error('\x1b[90m[AUDIO] First chunk received\x1b[0m');
       }
-      player.feedChunk(base64Data);
+      if (config.jsonOutput) {
+        jsonOut({ type: 'audio', data: base64Data });
+      } else if (player) {
+        player.feedChunk(base64Data);
+      }
     };
   }
 
@@ -72,18 +81,21 @@ async function startDaemon(config) {
     textBuffer += text;
   };
 
+  // In json-output mode, use stderr for log messages to keep stdout clean for JSON
+  const log = config.jsonOutput ? (...a) => console.error(...a) : (...a) => console.log(...a);
+
   // Connect
-  console.log('\x1b[35m🎙️  Connecting to Gemini Live API...\x1b[0m');
+  log('\x1b[35m🎙️  Connecting to Gemini Live API...\x1b[0m');
   try {
     await session.connect();
   } catch (err) {
     console.error(`Failed to connect: ${err.message}`);
     process.exit(1);
   }
-  console.log('\x1b[35m🎙️  code-commentary is live. Waiting for Claude Code events...\x1b[0m\n');
-  console.log(`   Style: ${config.style} | Voice: ${config.voice}`);
-  if (config.silent) console.log('   Mode: text-only (no audio)');
-  console.log('   Press Ctrl+C to stop.\n');
+  log('\x1b[35m🎙️  code-commentary is live. Waiting for Claude Code events...\x1b[0m\n');
+  log(`   Style: ${config.style} | Voice: ${config.voice}`);
+  if (config.silent) log('   Mode: text-only (no audio)');
+  log('   Press Ctrl+C to stop.\n');
 
   // Graceful shutdown
   let shuttingDown = false;
@@ -186,7 +198,10 @@ async function startDaemon(config) {
 
       session.onTurnComplete = () => {
         clearTimeout(turnTimeout);
-        if (player) {
+        if (config.jsonOutput) {
+          jsonOut({ type: 'end_utterance' });
+          resolve();
+        } else if (player) {
           player.endUtterance().then(resolve);
         } else {
           resolve();
@@ -196,7 +211,11 @@ async function startDaemon(config) {
 
     // Print text (in silent mode this is the commentary, in audio mode it may be empty)
     if (textBuffer.trim()) {
-      console.log(`\x1b[33m🎙️  ${textBuffer.trim()}\x1b[0m`);
+      if (config.jsonOutput) {
+        jsonOut({ type: 'text', data: textBuffer.trim() });
+      } else {
+        console.log(`\x1b[33m🎙️  ${textBuffer.trim()}\x1b[0m`);
+      }
     }
 
     isProcessing = false;

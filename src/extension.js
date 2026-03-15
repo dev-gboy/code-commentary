@@ -1,73 +1,193 @@
 const vscode = require('vscode');
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
+const { installHooks, uninstallHooks, hooksInstalled } = require('./init');
 
 let daemonProcess = null;
 let outputChannel = null;
 let statusBarItem = null;
-let settingsProvider = null;
+let sidebarProvider = null;
 
-// --- Tree View Provider ---
+// --- Sidebar WebviewView Provider (settings + audio player) ---
 
-class SettingsProvider {
-  constructor() {
-    this._onDidChangeTreeData = new vscode.EventEmitter();
-    this.onDidChangeTreeData = this._onDidChangeTreeData.event;
+class SidebarProvider {
+  constructor(extensionUri) {
+    this._extensionUri = extensionUri;
+    this._view = null;
+  }
+
+  resolveWebviewView(webviewView) {
+    this._view = webviewView;
+    webviewView.webview.options = { enableScripts: true };
+    this._updateHtml();
+
+    webviewView.webview.onDidReceiveMessage((msg) => {
+      switch (msg.command) {
+        case 'start': startDaemon(); break;
+        case 'stop': stopDaemon(); break;
+        case 'showOutput': outputChannel.show(true); break;
+        case 'changeSetting': changeSetting(msg.key); break;
+        case 'installHooks': doInstallHooks(); break;
+        case 'uninstallHooks': doUninstallHooks(); break;
+      }
+    });
+
+    webviewView.onDidDispose(() => { this._view = null; });
+  }
+
+  postAudioMessage(msg) {
+    if (this._view) {
+      this._view.webview.postMessage(msg);
+    }
   }
 
   refresh() {
-    this._onDidChangeTreeData.fire();
+    if (this._view) this._updateHtml();
   }
 
-  getTreeItem(element) {
-    return element;
-  }
-
-  getChildren(element) {
-    if (element) return [];
-
+  _updateHtml() {
+    if (!this._view) return;
     const cfg = getConfig();
     const running = daemonProcess !== null;
+    const hooks = hooksInstalled();
 
-    const items = [];
+    this._view.webview.html = /* html */ `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); color: var(--vscode-foreground); padding: 8px; margin: 0; }
+  .row { display: flex; align-items: center; padding: 4px 0; cursor: pointer; border-radius: 3px; }
+  .row:hover { background: var(--vscode-list-hoverBackground); }
+  .icon { width: 20px; text-align: center; margin-right: 8px; flex-shrink: 0; }
+  .label { flex: 1; }
+  .value { color: var(--vscode-descriptionForeground); font-size: 0.9em; }
+  .status { font-weight: bold; padding: 6px 0; }
+  .separator { height: 1px; background: var(--vscode-widget-border); margin: 6px 0; }
+  .btn { display: inline-block; padding: 4px 12px; border-radius: 3px; cursor: pointer; border: 1px solid var(--vscode-button-border, transparent); margin: 4px 4px 4px 0; font-size: 0.9em; }
+  .btn-primary { background: var(--vscode-button-background); color: var(--vscode-button-foreground); }
+  .btn-primary:hover { background: var(--vscode-button-hoverBackground); }
+  .btn-secondary { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
+  .btn-secondary:hover { background: var(--vscode-button-secondaryHoverBackground); }
+  .actions { padding: 8px 0; }
+</style>
+</head>
+<body>
 
-    // Status
-    const status = new vscode.TreeItem(
-      running ? 'Status: Running' : 'Status: Stopped',
-      vscode.TreeItemCollapsibleState.None
-    );
-    status.iconPath = new vscode.ThemeIcon(running ? 'pass-filled' : 'circle-slash');
-    status.description = running ? 'click stop to end' : 'click play to start';
-    items.push(status);
+<div class="status">
+  <span class="icon">${running ? '\u2705' : '\u26d4'}</span>
+  Status: ${running ? 'Running' : 'Stopped'}
+</div>
 
-    // Separator-ish
-    const sep = new vscode.TreeItem('');
-    items.push(sep);
+<div class="actions">
+  ${running
+    ? '<span class="btn btn-secondary" onclick="send(\'stop\')">Stop</span>'
+    : '<span class="btn btn-primary" onclick="send(\'start\')">Start</span>'
+  }
+  <span class="btn btn-secondary" onclick="send('showOutput')">Output</span>
+</div>
 
-    // Settings
-    items.push(this._settingItem('Style', cfg.style, 'style', 'symbol-color'));
-    items.push(this._settingItem('Voice', cfg.voice, 'voice', 'mic'));
-    items.push(this._settingItem('Language', cfg.language || 'English', 'language', 'globe'));
-    items.push(this._settingItem('Interval', `${cfg.interval}s`, 'interval', 'clock'));
-    items.push(this._settingItem('Session TTL', cfg.sessionTtl > 0 ? `${cfg.sessionTtl} min` : 'disabled', 'sessionTtl', 'history'));
-    items.push(this._settingItem('Silent Mode', cfg.silent ? 'On' : 'Off', 'silent', cfg.silent ? 'mute' : 'unmute'));
-    items.push(this._settingItem('Verbose', cfg.verbose ? 'On' : 'Off', 'verbose', 'debug-console'));
-    items.push(this._settingItem('API Key', cfg.apiKey ? 'configured' : 'not set', 'apiKey', 'key'));
+<div class="separator"></div>
 
-    return items;
+<div class="row" onclick="send('changeSetting', 'style')">
+  <span class="label">Style</span>
+  <span class="value">${cfg.style}</span>
+</div>
+<div class="row" onclick="send('changeSetting', 'voice')">
+  <span class="label">Voice</span>
+  <span class="value">${cfg.voice}</span>
+</div>
+<div class="row" onclick="send('changeSetting', 'language')">
+  <span class="label">Language</span>
+  <span class="value">${cfg.language || 'English'}</span>
+</div>
+<div class="row" onclick="send('changeSetting', 'interval')">
+  <span class="label">Interval</span>
+  <span class="value">${cfg.interval}s</span>
+</div>
+<div class="row" onclick="send('changeSetting', 'sessionTtl')">
+  <span class="label">Session TTL</span>
+  <span class="value">${cfg.sessionTtl > 0 ? cfg.sessionTtl + ' min' : 'disabled'}</span>
+</div>
+<div class="row" onclick="send('changeSetting', 'silent')">
+  <span class="label">Silent Mode</span>
+  <span class="value">${cfg.silent ? 'On' : 'Off'}</span>
+</div>
+<div class="row" onclick="send('changeSetting', 'verbose')">
+  <span class="label">Verbose</span>
+  <span class="value">${cfg.verbose ? 'On' : 'Off'}</span>
+</div>
+<div class="row" onclick="send('changeSetting', 'apiKey')">
+  <span class="label">API Key</span>
+  <span class="value">${cfg.apiKey ? 'configured' : 'not set'}</span>
+</div>
+
+<div class="separator"></div>
+
+<div class="row" onclick="send('${hooks ? 'uninstallHooks' : 'installHooks'}')">
+  <span class="icon">${hooks ? '\u2705' : '\ud83d\udd0c'}</span>
+  <span class="label">Claude Hooks</span>
+  <span class="value">${hooks ? 'installed' : 'not installed'}</span>
+</div>
+
+<script>
+const vscode = acquireVsCodeApi();
+
+function send(command, key) {
+  vscode.postMessage({ command, key });
+}
+
+// --- Web Audio API player (runs on UI/host side) ---
+const SAMPLE_RATE = 24000;
+let audioCtx = null;
+let nextStartTime = 0;
+
+function ensureContext() {
+  if (!audioCtx) {
+    audioCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
+    nextStartTime = audioCtx.currentTime;
+  }
+  return audioCtx;
+}
+
+function playPcmChunk(base64Data) {
+  const ctx = ensureContext();
+  const raw = atob(base64Data);
+  const samples = raw.length / 2;
+  const buffer = ctx.createBuffer(1, samples, SAMPLE_RATE);
+  const channel = buffer.getChannelData(0);
+
+  for (let i = 0; i < samples; i++) {
+    const lo = raw.charCodeAt(i * 2);
+    const hi = raw.charCodeAt(i * 2 + 1);
+    let sample = lo | (hi << 8);
+    if (sample >= 0x8000) sample -= 0x10000;
+    channel[i] = sample / 32768;
   }
 
-  _settingItem(label, value, settingKey, icon) {
-    const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
-    item.description = String(value);
-    item.iconPath = new vscode.ThemeIcon(icon);
-    item.contextValue = 'editable';
-    item.command = {
-      command: 'code-commentary.changeSetting',
-      title: 'Change',
-      arguments: [settingKey],
-    };
-    return item;
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(ctx.destination);
+
+  const now = ctx.currentTime;
+  if (nextStartTime < now) nextStartTime = now;
+  source.start(nextStartTime);
+  nextStartTime += buffer.duration;
+}
+
+window.addEventListener('message', (event) => {
+  const msg = event.data;
+  if (msg.type === 'audio') {
+    playPcmChunk(msg.data);
+  } else if (msg.type === 'end_utterance') {
+    nextStartTime = 0;
+  }
+});
+</script>
+
+</body>
+</html>`;
   }
 }
 
@@ -156,12 +276,38 @@ const SETTING_HANDLERS = {
 async function updateSetting(key, value) {
   const cfg = vscode.workspace.getConfiguration('code-commentary');
   await cfg.update(key, value, vscode.ConfigurationTarget.Global);
-  settingsProvider.refresh();
+  if (sidebarProvider) sidebarProvider.refresh();
 }
 
 async function changeSetting(settingKey) {
   const handler = SETTING_HANDLERS[settingKey];
   if (handler) await handler();
+}
+
+async function doInstallHooks() {
+  const result = installHooks();
+  if (result.success) {
+    vscode.window.showInformationMessage(result.message);
+  } else {
+    vscode.window.showErrorMessage(result.message);
+  }
+  if (sidebarProvider) sidebarProvider.refresh();
+}
+
+async function doUninstallHooks() {
+  const confirm = await vscode.window.showWarningMessage(
+    'Remove Code Commentary hooks from ~/.claude/settings.json?',
+    { modal: true },
+    'Uninstall'
+  );
+  if (confirm !== 'Uninstall') return;
+  const result = uninstallHooks();
+  if (result.success) {
+    vscode.window.showInformationMessage(result.message);
+  } else {
+    vscode.window.showErrorMessage(result.message);
+  }
+  if (sidebarProvider) sidebarProvider.refresh();
 }
 
 // --- Core functions ---
@@ -176,18 +322,19 @@ function activate(context) {
   statusBarItem.show();
   context.subscriptions.push(statusBarItem);
 
-  // Tree view
-  settingsProvider = new SettingsProvider();
-  const treeView = vscode.window.createTreeView('code-commentary.settings', {
-    treeDataProvider: settingsProvider,
-  });
-  context.subscriptions.push(treeView);
+  // Sidebar webview (settings + audio)
+  sidebarProvider = new SidebarProvider(context.extensionUri);
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider('code-commentary.settings', sidebarProvider, {
+      webviewOptions: { retainContextWhenHidden: true }
+    })
+  );
 
-  // Watch for config changes to refresh the tree
+  // Watch for config changes to refresh sidebar
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(e => {
       if (e.affectsConfiguration('code-commentary')) {
-        settingsProvider.refresh();
+        if (sidebarProvider) sidebarProvider.refresh();
       }
     })
   );
@@ -199,6 +346,8 @@ function activate(context) {
     vscode.commands.registerCommand('code-commentary.toggle', toggleDaemon),
     vscode.commands.registerCommand('code-commentary.changeSetting', changeSetting),
     vscode.commands.registerCommand('code-commentary.showOutput', () => outputChannel.show(true)),
+    vscode.commands.registerCommand('code-commentary.installHooks', doInstallHooks),
+    vscode.commands.registerCommand('code-commentary.uninstallHooks', doUninstallHooks),
   );
 }
 
@@ -217,7 +366,7 @@ function getConfig() {
 }
 
 function buildArgs(config) {
-  const args = ['start'];
+  const args = ['start', '--json-output'];
   args.push('--style', config.style);
   args.push('--voice', config.voice);
   args.push('--interval', String(config.interval));
@@ -262,10 +411,31 @@ async function startDaemon() {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
+  // stdout carries JSON lines (audio chunks, text, end_utterance)
+  let stdoutBuf = '';
   daemonProcess.stdout.on('data', (data) => {
-    outputChannel.appendLine(stripAnsi(data.toString().trimEnd()));
+    stdoutBuf += data.toString();
+    const lines = stdoutBuf.split('\n');
+    stdoutBuf = lines.pop(); // keep incomplete line in buffer
+
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      try {
+        const msg = JSON.parse(line);
+        if (msg.type === 'audio' && sidebarProvider) {
+          sidebarProvider.postAudioMessage({ type: 'audio', data: msg.data });
+        } else if (msg.type === 'end_utterance' && sidebarProvider) {
+          sidebarProvider.postAudioMessage({ type: 'end_utterance' });
+        } else if (msg.type === 'text') {
+          outputChannel.appendLine(`Commentary: ${msg.data}`);
+        }
+      } catch {
+        outputChannel.appendLine(stripAnsi(line));
+      }
+    }
   });
 
+  // stderr carries log/status messages
   daemonProcess.stderr.on('data', (data) => {
     outputChannel.appendLine(stripAnsi(data.toString().trimEnd()));
   });
@@ -322,8 +492,8 @@ function setStatus(state) {
     }
   }
 
-  if (settingsProvider) {
-    settingsProvider.refresh();
+  if (sidebarProvider) {
+    sidebarProvider.refresh();
   }
 }
 

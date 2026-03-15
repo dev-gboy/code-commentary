@@ -9,6 +9,7 @@ const DEFAULTS = {
   silent: false,
   verbose: false,
   background: false,
+  jsonOutput: false,
   apiKey: null,
   language: null,
 };
@@ -43,6 +44,9 @@ function parseArgs(args) {
         break;
       case '--background':
         config.background = true;
+        break;
+      case '--json-output':
+        config.jsonOutput = true;
         break;
       case '--api-key':
         config.apiKey = args[++i];

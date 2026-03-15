@@ -13,12 +13,19 @@ const HOOK_EVENTS = {
   SessionEnd: {},
 };
 
+function getBinPath() {
+  const localBin = path.resolve(__dirname, '..', 'bin', 'code-commentary.js');
+  if (fs.existsSync(localBin)) return `node ${localBin}`;
+  return 'code-commentary';
+}
+
 function buildHooks() {
+  const bin = getBinPath();
   const hooks = {};
   for (const [eventName, opts] of Object.entries(HOOK_EVENTS)) {
     const hookEntry = {
       type: 'command',
-      command: `code-commentary --hook-event ${eventName}`
+      command: `${bin} --hook-event ${eventName}`
     };
     const rule = { hooks: [hookEntry] };
     if (opts.matcher) rule.matcher = opts.matcher;
@@ -46,59 +53,54 @@ function installHooks() {
   if (!settings.hooks) settings.hooks = {};
 
   const newHooks = buildHooks();
-  let alreadyInstalled = true;
 
   for (const [eventName, rules] of Object.entries(newHooks)) {
     if (!settings.hooks[eventName]) {
       settings.hooks[eventName] = [];
     }
 
-    // Check if our hook already exists
-    const existing = settings.hooks[eventName];
-    const hasOurs = existing.some(rule =>
-      rule.hooks?.some(h => h.command?.startsWith('code-commentary'))
+    // Remove any existing code-commentary hooks (may have stale paths)
+    settings.hooks[eventName] = settings.hooks[eventName].filter(rule =>
+      !rule.hooks?.some(h => h.command?.includes('code-commentary'))
     );
 
-    if (!hasOurs) {
-      alreadyInstalled = false;
-      settings.hooks[eventName].push(...rules);
-    }
+    // Add fresh hooks
+    settings.hooks[eventName].push(...rules);
   }
 
-  if (alreadyInstalled) {
-    console.log('code-commentary hooks are already installed.');
-    return;
+  try {
+    fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2) + '\n');
+  } catch (err) {
+    const msg = `Failed to write ${SETTINGS_PATH}: ${err.message}`;
+    console.error(msg);
+    return { success: false, message: msg };
   }
 
-  fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2) + '\n');
   console.log('Hooks installed into ~/.claude/settings.json');
-  console.log('Now run: code-commentary start');
+  return { success: true, message: 'Hooks installed into ~/.claude/settings.json' };
 }
 
 function uninstallHooks() {
   if (!fs.existsSync(SETTINGS_PATH)) {
-    console.log('No settings.json found. Nothing to uninstall.');
-    return;
+    return { success: true, message: 'No settings.json found. Nothing to uninstall.' };
   }
 
   let settings;
   try {
     settings = JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8'));
   } catch {
-    console.error('Could not parse settings.json');
-    return;
+    return { success: false, message: `Could not parse ${SETTINGS_PATH}` };
   }
 
   if (!settings.hooks) {
-    console.log('No hooks found. Nothing to uninstall.');
-    return;
+    return { success: true, message: 'No hooks found. Nothing to uninstall.' };
   }
 
   let removed = false;
   for (const eventName of Object.keys(settings.hooks)) {
     const before = settings.hooks[eventName].length;
     settings.hooks[eventName] = settings.hooks[eventName].filter(rule =>
-      !rule.hooks?.some(h => h.command?.startsWith('code-commentary'))
+      !rule.hooks?.some(h => h.command?.includes('code-commentary'))
     );
     if (settings.hooks[eventName].length < before) removed = true;
     if (settings.hooks[eventName].length === 0) {
@@ -110,13 +112,32 @@ function uninstallHooks() {
     delete settings.hooks;
   }
 
-  fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2) + '\n');
+  try {
+    fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2) + '\n');
+  } catch (err) {
+    const msg = `Failed to write ${SETTINGS_PATH}: ${err.message}`;
+    console.error(msg);
+    return { success: false, message: msg };
+  }
 
   if (removed) {
-    console.log('code-commentary hooks removed from ~/.claude/settings.json');
+    return { success: true, message: 'code-commentary hooks removed from ~/.claude/settings.json' };
   } else {
-    console.log('No code-commentary hooks found to remove.');
+    return { success: true, message: 'No code-commentary hooks found to remove.' };
   }
 }
 
-module.exports = { installHooks, uninstallHooks };
+function hooksInstalled() {
+  if (!fs.existsSync(SETTINGS_PATH)) return false;
+  try {
+    const settings = JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8'));
+    if (!settings.hooks) return false;
+    return Object.values(settings.hooks).some(rules =>
+      rules.some(rule => rule.hooks?.some(h => h.command?.includes('code-commentary')))
+    );
+  } catch {
+    return false;
+  }
+}
+
+module.exports = { installHooks, uninstallHooks, hooksInstalled };

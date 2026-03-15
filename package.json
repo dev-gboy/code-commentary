@@ -1,7 +1,7 @@
 {
   "name": "code-commentary-vscode",
   "displayName": "Code Commentary (VS Code)",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "description": "Live audio commentary for your AI coding sessions — sports, podcast, nature doc, or hype style",
   "publisher": "dev-gboy",
   "bin": {
@@ -53,7 +53,8 @@
       "code-commentary": [
         {
           "id": "code-commentary.settings",
-          "name": "Settings"
+          "name": "Settings",
+          "type": "webview"
         }
       ]
     },
@@ -81,6 +82,14 @@
         "command": "code-commentary.showOutput",
         "title": "Show Output",
         "icon": "$(output)"
+      },
+      {
+        "command": "code-commentary.installHooks",
+        "title": "Code Commentary: Install Hooks"
+      },
+      {
+        "command": "code-commentary.uninstallHooks",
+        "title": "Code Commentary: Uninstall Hooks"
       }
     ],
     "menus": {
@@ -101,13 +110,7 @@
           "group": "navigation"
         }
       ],
-      "view/item/context": [
-        {
-          "command": "code-commentary.changeSetting",
-          "when": "view == code-commentary.settings && viewItem == editable",
-          "group": "inline"
-        }
-      ]
+      "view/item/context": []
     },
     "configuration": {
       "title": "Code Commentary",
